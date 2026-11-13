@@ -1,137 +1,120 @@
-'use client';
+import { readStats, type Platform, type Post } from "@/lib/stats";
 
-import { useState } from 'react';
+export const dynamic = "force-dynamic";
 
-export default function Home() {
-  const [connectionStatus, setConnectionStatus] = useState<string>('');
-  const projectId = process.env.NEXT_PUBLIC_PIPEDREAM_PROJECT_ID;
+const sum = (xs: (number | undefined)[]) => xs.reduce<number>((a, b) => a + (b ?? 0), 0);
+const fmt = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-  if (!projectId) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-zinc-50 dark:bg-black">
-        <div className="text-red-600">
-          Error: NEXT_PUBLIC_PIPEDREAM_PROJECT_ID is not configured
-        </div>
-      </div>
-    );
-  }
+function ago(iso: string | null) {
+  if (!iso) return "never";
+  const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if (m < 60) return `${m} min ago`;
+  if (m < 1440) return `${Math.round(m / 60)} h ago`;
+  return `${Math.round(m / 1440)} d ago`;
+}
 
-  const handleConnect = async () => {
-    try {
-      setConnectionStatus('Connecting...');
-      const response = await fetch('/api/connections', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId }),
-      });
-
-      if (response.ok) {
-        setConnectionStatus('Connection successful!');
-      } else {
-        setConnectionStatus('Connection failed');
-      }
-    } catch (error) {
-      console.error('Connection error:', error);
-      setConnectionStatus('Connection error');
-    }
-  };
-
+function Stat({ label, value }: { label: string; value: number | string | null | undefined }) {
   return (
-    <div className="flex flex-col min-h-screen bg-zinc-50 dark:bg-black">
-      <nav className="flex justify-end gap-4 p-4 text-sm">
-        <a href="/reddit" className="rounded-lg bg-orange-600 px-4 py-2 font-medium text-white hover:bg-orange-700">
-          r/hopsai Stats Dashboard &rarr;
-        </a>
-      </nav>
-      <main className="flex-1 flex flex-col items-center justify-start py-12 px-4">
-        <div className="max-w-2xl w-full">
-          <h1 className="text-4xl font-bold text-black dark:text-white mb-2">
-            Pipedream Connect Integration
-          </h1>
-          <p className="text-lg text-zinc-600 dark:text-zinc-400 mb-8">
-            Connect your accounts to 10,000+ applications with Pipedream
-          </p>
-
-          <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-8 mb-8">
-            <h2 className="text-2xl font-semibold text-black dark:text-white mb-6">
-              Integration Setup
-            </h2>
-
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-semibold text-black dark:text-white mb-2">
-                  Project ID
-                </h3>
-                <code className="bg-zinc-100 dark:bg-zinc-800 px-4 py-2 rounded text-sm font-mono block">
-                  {projectId}
-                </code>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-black dark:text-white mb-2">
-                  Configuration Status
-                </h3>
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <span className="text-green-600 dark:text-green-400 mr-2">✓</span>
-                    <span className="text-zinc-700 dark:text-zinc-300">Project ID configured</span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-green-600 dark:text-green-400 mr-2">✓</span>
-                    <span className="text-zinc-700 dark:text-zinc-300">Pipedream SDK installed</span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-green-600 dark:text-green-400 mr-2">✓</span>
-                    <span className="text-zinc-700 dark:text-zinc-300">API routes configured</span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={handleConnect}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
-              >
-                Test Connection
-              </button>
-
-              {connectionStatus && (
-                <div className={`p-4 rounded-lg ${
-                  connectionStatus.includes('successful') 
-                    ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
-                    : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
-                }`}>
-                  {connectionStatus}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-8 mb-8">
-            <h2 className="text-2xl font-semibold text-black dark:text-white mb-4">
-              To Complete Setup
-            </h2>
-            <ol className="space-y-3 text-zinc-700 dark:text-zinc-300 list-decimal list-inside">
-              <li>Authenticate with Pipedream CLI: <code className="bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded text-sm">pd login</code></li>
-              <li>Configure OAuth credentials in your Pipedream dashboard</li>
-              <li>Set up your OAuth client with production callback URLs</li>
-              <li>Update environment variables for production deployment</li>
-              <li>Deploy to your production environment (Vercel, etc.)</li>
-            </ol>
-          </div>
-
-          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg shadow-lg p-8 border border-blue-200 dark:border-blue-800">
-            <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-4">
-              Project Structure
-            </h3>
-            <div className="space-y-2 text-sm text-blue-800 dark:text-blue-200 font-mono">
-              <div><span className="font-semibold">./lib/pipedream.ts</span> - SDK configuration</div>
-              <div><span className="font-semibold">./app/api/connections/</span> - Connection management API</div>
-              <div><span className="font-semibold">./app/api/webhooks/</span> - Webhook receiver endpoint</div>
-              <div><span className="font-semibold">.env.local</span> - Configuration with project ID</div>
-            </div>
-          </div>
-        </div>
-      </main>
+    <div className="rounded-lg border border-zinc-700/50 p-4">
+      <p className="text-xs uppercase tracking-wide text-zinc-500">{label}</p>
+      <p className="text-2xl font-bold">{value ?? "—"}</p>
     </div>
+  );
+}
+
+function PostRow({ p, a, b }: { p: Post; a: [string, number | undefined]; b: [string, number | undefined] }) {
+  return (
+    <li className="py-3 border-t border-zinc-700/50 first:border-t-0">
+      <a href={p.url} className="font-medium hover:underline">{p.title}</a>
+      <p className="text-xs text-zinc-500 mt-1">
+        {fmt(p.date)} · {a[1] ?? 0} {a[0]} · {b[1] ?? 0} {b[0]}
+      </p>
+    </li>
+  );
+}
+
+function Section({
+  name, accent, data, headline, metricA, metricB, empty,
+}: {
+  name: string; accent: string; data: Platform;
+  headline: [string, number | null | undefined][];
+  metricA: [string, (p: Post) => number | undefined];
+  metricB: [string, (p: Post) => number | undefined];
+  empty: string;
+}) {
+  const posts = [...data.posts].sort((x, y) => y.date.localeCompare(x.date));
+  const recent = posts.slice(0, 3);
+  const A = (p: Post): [string, number | undefined] => [metricA[0], metricA[1](p)];
+  const B = (p: Post): [string, number | undefined] => [metricB[0], metricB[1](p)];
+  return (
+    <section className="rounded-2xl border border-zinc-700/50 p-6 space-y-6">
+      <header className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-2xl font-bold" style={{ color: accent }}>{name}</h2>
+        <div className="text-sm text-zinc-500">
+          <span>Last refreshed: {ago(data.updatedAt)}</span>
+          {data.updatedAt && <span> ({new Date(data.updatedAt).toLocaleString()})</span>}
+          {" · "}
+          <a className="underline" href={data.url}>open</a>
+        </div>
+      </header>
+
+      {posts.length === 0 && !headline.some(([, v]) => v != null) ? (
+        <p className="text-zinc-500">{empty}</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {headline.map(([l, v]) => <Stat key={l} label={l} value={v} />)}
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-2">Recent 3 posts</h3>
+            <ul>{recent.map((p) => <PostRow key={p.url} p={p} a={A(p)} b={B(p)} />)}</ul>
+            <div className="grid grid-cols-3 gap-3 mt-3">
+              <Stat label={`${metricA[0]} (recent 3)`} value={sum(recent.map(metricA[1]))} />
+              <Stat label={`${metricB[0]} (recent 3)`} value={sum(recent.map(metricB[1]))} />
+              <Stat label="Posts" value={recent.length} />
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-2">Overall ({posts.length} posts)</h3>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <Stat label={`Total ${metricA[0]}`} value={sum(posts.map(metricA[1]))} />
+              <Stat label={`Total ${metricB[0]}`} value={sum(posts.map(metricB[1]))} />
+              <Stat label={`Avg ${metricA[0]}/post`} value={posts.length ? (sum(posts.map(metricA[1])) / posts.length).toFixed(1) : null} />
+              <Stat label={`Avg ${metricB[0]}/post`} value={posts.length ? (sum(posts.map(metricB[1])) / posts.length).toFixed(1) : null} />
+            </div>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+export default async function Home() {
+  const { reddit, linkedin } = await readStats();
+  return (
+    <main className="mx-auto max-w-4xl p-6 sm:p-10 space-y-8">
+      <header className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h1 className="text-3xl font-bold">Hops Community Stats</h1>
+          <p className="text-zinc-500">Reddit and LinkedIn at a glance. Data refreshes daily.</p>
+        </div>
+        <a href="/pipedream" className="text-sm underline text-zinc-500">Pipedream Connect &rarr;</a>
+      </header>
+
+      <Section
+        name="Reddit · r/hopsai" accent="#ea580c" data={reddit}
+        headline={[["Subscribers", reddit.subscribers], ["Weekly active", reddit.weeklyActive]]}
+        metricA={["upvotes", (p) => p.score]} metricB={["comments", (p) => p.comments]}
+        empty="No Reddit data yet."
+      />
+      <Section
+        name="LinkedIn · Hops AI" accent="#2563eb" data={linkedin}
+        headline={[["Followers", linkedin.followers]]}
+        metricA={["reactions", (p) => p.reactions]} metricB={["comments", (p) => p.comments]}
+        empty="No LinkedIn data yet. LinkedIn requires login, so the daily job cannot read this page anonymously."
+      />
+    </main>
   );
 }
