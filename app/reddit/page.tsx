@@ -42,6 +42,7 @@ export default async function RedditDashboard() {
   return (
     <main className="mx-auto max-w-4xl p-8 space-y-8">
       <header>
+        <a href="/" className="text-sm underline text-gray-500">&larr; Pipedream Connect</a>
         <h1 className="text-3xl font-bold">r/hopsai Dashboard</h1>
         <p className="text-gray-500">
           Daily stats from <a className="underline" href="https://www.reddit.com/r/hopsai/">reddit.com/r/hopsai</a>
